@@ -1,0 +1,10 @@
+Set-ExecutionPolicy -ExecutionPolicy Bypass -Scope Process
+
+
+npm init -y
+
+npm install express
+
+node .
+
+download insomnia

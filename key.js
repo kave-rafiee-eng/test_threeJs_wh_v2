@@ -3,8 +3,15 @@ const keys = {
   KeyA: false,
   KeyS: false,
   KeyD: false,
+
   KeyE: false,
-  KeyQ: false
+  KeyQ: false,
+
+  KeyR: false,//remove
+
+  KeyB: false,//big
+  KeyM: false,//med
+
 };
 
 const prevKeys = {
@@ -12,8 +19,15 @@ const prevKeys = {
   KeyA: false,
   KeyS: false,
   KeyD: false,
+
   KeyE: false,
-  KeyQ: false
+  KeyQ: false,
+
+  KeyR: false,//remove
+
+  KeyB: false,//big
+  KeyM: false,//med
+
 };
 
 let initialized = false;

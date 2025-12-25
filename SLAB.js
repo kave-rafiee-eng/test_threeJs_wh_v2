@@ -24,3 +24,29 @@ export class SLAB {
 
   }
 }
+
+export const SLAB_TYPE = Object.freeze({
+  BIG: Object.freeze({ width: 1000, height: 50, depth: 240 }),
+  MED: Object.freeze({ width: 1000, height: 50, depth: 100 })
+});
+
+export function createSlab(type, x, y, s, slabs) {
+
+  if (!Object.values(SLAB_TYPE).includes(type)) {
+    throw new Error("Invalid SLAB_TYPE");
+  }
+
+  slabs.push(
+    new SLAB({
+      width: type.width,
+      height: type.height,
+      depth: type.depth,
+      id: "sl" + Math.floor( Math.random() * 1000 ) ,
+      x : x,
+      y : y,
+      s : s
+    })
+  );
+
+  console.log("id:"+ slabs[slabs.length-1].id )
+}

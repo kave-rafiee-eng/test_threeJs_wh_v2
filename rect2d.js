@@ -15,12 +15,14 @@ export class RECT2D {
     }
 
     draw( sections ) {
+
         if (!this.p) return;
         this.p.rectMode(this.p.CENTER);
         //this.p.fill(this.color);
+        
         this.p.strokeWeight(2);
         this.p.noFill();
-        this.p.rect(this.x, this.y, this.w, this.h);
+        this.p.rect( this.x, this.y, this.w, this.h);
 
         const offsets = [
             [ 0.25,  0.25 , sections[0] ],

@@ -14,6 +14,7 @@ export class BOX3D {
     this.width= width;
     this.depth= depth;
 
+    this.id = null;
     // Geometry
     this.geometry = new THREE.BoxGeometry( this.width, this.height ,this.depth);
 
@@ -55,7 +56,7 @@ export class BOX3D {
   }
   // === Position ===
   setPosition(x, y, z) {
-    this.mesh.position.set(x, z , y);
+    this.mesh.position.set(x, y , z);
   }
 
   move(dx, dy, dz) {
@@ -85,12 +86,14 @@ export class BOX3D {
 
   addTextOnFace(text, options = {}) {
     const {
-      face = 'left',       // 'top', 'bottom', 'front', 'back', 'left', 'right'
+      face = 'back',       // 'top', 'bottom', 'front', 'back', 'left', 'right'
       fontSize = 100,
       color = 'white',
       bgColor = 'black'
     } = options;
 
+    this.id = text;
+    
     const canvas = document.createElement('canvas');
     canvas.width = 500;
     canvas.height = 150;
@@ -154,7 +157,7 @@ export class BOX3D {
         plane.rotation.y = Math.PI/2;
         break;
       case 'right':
-        plane.position.set(w/2 + 0.001, 0, 0);
+        plane.position.set(-w/2 - 0.001, 0, 0);
         plane.rotation.y = -Math.PI/2;
         break;
     }

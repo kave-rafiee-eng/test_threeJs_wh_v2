@@ -3,8 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import { BOX3D } from './box3d.js';
 
-const WORD_W = 40
-
+const WORD_W = 50
 //renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 //scene
@@ -12,21 +11,33 @@ const scene = new THREE.Scene();
 //camera
 let divThree = document.getElementById("three_div");
 export const camera = new THREE.PerspectiveCamera(
-  75,
+  50,
   divThree.clientWidth / divThree.clientHeight,
   0.1,
   1000
 );
-camera.position.set(15, 15, 0);
+camera.position.set(0, 15, -25);
 //OrbitControls
-const controls = new OrbitControls(camera, renderer.domElement);
+let controls = new OrbitControls(camera, renderer.domElement);
+controls.screenSpacePanning = false; 
+controls.enableDamping = true;   
+controls.dampingFactor = 0.05;
+controls.target.set(0, 0, 0);
+
 
 const creanSim = new BOX3D({
-    width: 0.5,
-    height: 100,
-    depth: 0.5,
-    color: 0x00ff00
+  width: 0.5,
+  height: 100,
+  depth: 0.5,
+  color: 0x00ff00
 });
+
+/*
+const geometry = new THREE.BoxGeometry(1, 1, 1);
+const material = new THREE.MeshNormalMaterial();
+const cube = new THREE.Mesh(geometry, material);
+cube.position.set(0, 0, 10);
+scene.add(cube);*/
 
 let boxes_3D = [];
 
@@ -36,31 +47,52 @@ function colorFromIndex(i) {
 }
 
 export function set_cranePos( x , y ) {
-  creanSim.setPosition( x/100 , y/100 , 0 );
+  creanSim.setPosition( -x/100 , 0 , y/100 );
 }
 
-export function set_sceneBoxes(slabs) {
+let Arr_stages = [];
+let Arr_slabes = [];
 
+export function update_slabById( originSlab ){
+
+  boxes_3D.forEach((box)=>{
+    if( box.id == originSlab.id ){
+      //box.setPosition( -originSlab.x / 100 , originSlab.s , originSlab.y )
+      box.mesh.position.x = -originSlab.x/100;
+      box.mesh.position.z = originSlab.y/100;
+      box.mesh.position.y = originSlab.s * originSlab.height/100;
+    }
+  })
+}
+export function update3D(){
+  draw_sceneBoxes(Arr_slabes);
+  set_Ground(scene);
+  draw_stages(Arr_stages);
+}
+
+export function set_sceneBoxes(slabes) {
+  Arr_slabes = JSON.parse( JSON.stringify(slabes) );
+}
+
+export function set_sceneStages(stages) {
+  Arr_stages = JSON.parse( JSON.stringify(stages) );
+}
+
+function draw_sceneBoxes( slabes ){
   clearMeshes(scene);
-  set_defaultMesh(scene);
 
   boxes_3D.forEach(box => {
     box.dispose?.(); 
   });
   boxes_3D.length = 0;
 
-  slabs.forEach((slab,index) => {
+  slabes.forEach((slab,index) => {
 
-    const box = new BOX3D({ width:slab.width/100 , height:slab.height/100 , depth:slab.depth/100 } );
+    const box = new BOX3D({  width:slab.depth/100 , height:slab.height/100 , depth:slab.width/100 } );
 
-    /*box.setColor(new THREE.Color(
-      Math.random(),
-      Math.random(),
-      Math.random()
-    ));*/
     box.setColor(colorFromIndex( parseInt( parseInt( slab.id.replace(/\D/g, ''), 10) ) ));
 
-    box.setPosition( slab.x/100 , slab.y/100 , slab.height/200 + ( slab.s * slab.height/100 )  );
+    box.setPosition( -slab.x/100 ,  slab.height/200 + ( slab.s * slab.height/100 ) , slab.y/100);
 
     box.addTextOnFace( slab.id );
 
@@ -69,16 +101,12 @@ export function set_sceneBoxes(slabs) {
     boxes_3D.push(box);
   });
 
-  console.log('Scene objects:', scene.children.length);
-
   creanSim.addTo(scene);
-
 }
-
 
 creanSim.setPosition(0, 0 , creanSim.depth/2);
 
-clearScene(scene );
+//clearScene(scene );
 set_word3D( scene );
 
 export let camera_yawDeg = 0;
@@ -89,45 +117,144 @@ function animation() {
   controls.update();
   renderer.render(scene, camera);
 
-  const center = new THREE.Vector3(0, 0, 0); 
+  //-------------------
+  const center = new THREE.Vector3(controls.target.x, controls.target.y, controls.target.z); 
   const dir = new THREE.Vector3();
   dir.subVectors(camera.position, center);
 
 
   const spherical = new THREE.Spherical();
   spherical.setFromVector3(dir);
-
   //const pitch = spherical.phi;   
   const yaw = spherical.theta;   
-
   //const pitchDeg = THREE.MathUtils.radToDeg(pitch);
   camera_yawDeg = THREE.MathUtils.radToDeg(yaw);
-
- //console.log({ pitch, yaw, pitchDeg, yawDeg });
-
-
+  //console.log({ pitch, yaw, pitchDeg, yawDeg });
 
 }
 
-window.addEventListener("resize" , ()=>{
+window.addEventListener("resize", () => {
 
-    let divThree = document.getElementById("three_div");
-  renderer.setSize( divThree.clientWidth , divThree.clientHeight );
-  
-})
+  const divThree = document.getElementById("three_div");
+  const width  = divThree.clientWidth;
+  const height = divThree.clientHeight;
+
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+
+  renderer.setSize(width, height);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+});
 
 renderer.setAnimationLoop(animation);
 
-function set_defaultMesh( scene ){
+let groundCanvas;
+let groundCtx;
+let groundTexture;
+let groundMesh;
 
-    //ground
-  const groundMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry( WORD_W , WORD_W ), groundMat);
-  ground.rotation.x = -Math.PI/2;
-  ground.position.y = 0;
-  ground.receiveShadow = true;
-  scene.add(ground);
 
+function set_Ground(scene) {
+
+  const TEX_SIZE = 2048;
+
+  // canvas
+  groundCanvas = document.createElement('canvas');
+  groundCanvas.width = TEX_SIZE;
+  groundCanvas.height = TEX_SIZE;
+
+  groundCtx = groundCanvas.getContext('2d');
+
+  groundCtx.fillStyle = '#3e5127ff';
+  groundCtx.fillRect(0, 0, TEX_SIZE, TEX_SIZE);
+
+  groundTexture = new THREE.CanvasTexture(groundCanvas);
+  groundTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+
+  const groundMat = new THREE.MeshStandardMaterial({
+    map: groundTexture
+  });
+
+  groundMesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(WORD_W, WORD_W),
+    groundMat
+  );
+
+  groundMesh.rotation.x = -Math.PI / 2;
+  groundMesh.receiveShadow = true;
+
+  scene.add(groundMesh);
+
+}
+
+set_Ground( scene );
+
+export function draw_stages( stages ){
+
+  clearGround('#3e5127ff')
+
+  stages.forEach( (stage)=>{
+
+    let x = mapRange( stage.x , 0 , WORD_W*100 , 0 , -groundCanvas.width  )
+    let y = mapRange( stage.y , 0 , WORD_W*100 , 0 , groundCanvas.height )
+    let w = mapRange( stage.width , 0 , WORD_W*100 , 0 , groundCanvas.width )
+    let h = mapRange( stage.height , 0 , WORD_W*100 , 0 , groundCanvas.height )
+
+    let boreder = mapRange( 50 , 0 , WORD_W*100 , 0 , groundCanvas.width )
+
+    groundCtx.fillStyle = '#ffffffff';
+    canvas_fillRectCenter( groundCtx ,  x , y , w , h)
+
+    groundCtx.fillStyle = '#151111ff';
+    canvas_fillRectCenter( groundCtx ,  x , y , w-boreder , h-boreder)
+
+    groundCtx.save();
+
+    groundCtx.translate(
+      groundCanvas.width / 2 + x,
+      groundCanvas.height / 2 + y
+    );
+
+    groundCtx.rotate(Math.PI/2);
+
+    groundCtx.fillStyle = '#ffffffff';
+    groundCtx.font = '40px Arial';
+    groundCtx.textAlign = 'center';
+    groundCtx.textBaseline = 'middle';
+
+    groundCtx.fillText(stage.id, 0, 0);
+
+    groundCtx.restore();
+
+  })
+
+  groundTexture.needsUpdate = true;
+
+}
+
+function canvas_fillRectCenter(ctx, cx, cy, w, h) {
+
+  ctx.fillRect(
+    groundCanvas.width /2 + cx - w / 2,
+    groundCanvas.height/2 + cy - h / 2,
+    w,
+    h
+  );
+
+}
+
+
+function clearGround(color = '#4e3e3eff') {
+  groundCtx.fillStyle = color;
+  groundCtx.fillRect(
+    0,
+    0,
+    groundCanvas.width,
+    groundCanvas.height
+  );
+
+  groundTexture.needsUpdate = true;
 }
 
 function set_word3D( scene ){
@@ -143,7 +270,7 @@ function set_word3D( scene ){
   scene.background = new THREE.Color(0xf1f1f1);
 
   //axesHelper
-  const axesHelper = new THREE.AxesHelper(1);
+  const axesHelper = new THREE.AxesHelper(10);
   axesHelper.position.y = 0.1;
   scene.add(axesHelper);
   //grid
@@ -151,35 +278,16 @@ function set_word3D( scene ){
   scene.add(grid);
   
   //light
-  const light = new THREE.DirectionalLight(0x00ffff, 1);
-  light.position.set(10, 10, 0); 
+  const light = new THREE.DirectionalLight(0xffffff, 1);
+  light.position.set(0, 15, -15); 
   light.castShadow = true;       
   light.shadow.mapSize.width = 1024;
   light.shadow.mapSize.height = 1024;
   light.shadow.camera.near = 0.5;
   light.shadow.camera.far = 50;
   scene.add(light);
-  const lightHelper = new THREE.DirectionalLightHelper(light, 2, 0xdd0000); 
+  const lightHelper = new THREE.DirectionalLightHelper(light, 2, 0xffffff); 
   scene.add(lightHelper);
-  //light
-  /*const light_2 = new THREE.DirectionalLight(0x00ffff, 1);
-  light_2.position.set(10, 10, 10); 
-  light_2.castShadow = true;       
-  light_2.shadow.mapSize.width = 1024;
-  light_2.shadow.mapSize.height = 1024;
-  light_2.shadow.camera.near = 0.5;
-  light_2.shadow.camera.far = 50;
-  scene.add(light_2);
-  const lightHelper_2 = new THREE.DirectionalLightHelper(light_2, 2, 0xdd0000); 
-  scene.add(lightHelper_2);
-  */
-
-
-  // Orbit Controls
-  controls.enableDamping = true;   
-  controls.dampingFactor = 0.05;
-  controls.target.set(0, 0, 0);
-  controls.update();
 
 }
 
@@ -228,7 +336,7 @@ function clearScene(scene) {
 
 import p5 from "p5";
 import { RECT2D , isRectCollideCenter , getRectCollisionSections } from './rect2d.js'
-import { rotate } from 'three/tsl';
+import { range, rotate } from 'three/tsl';
 
 let container = document.getElementById("p5_div");
 let p5Instance = null;
@@ -249,17 +357,21 @@ const sketch = (p) => {
 
       p.translate(p.width / 2, p.height / 2);
       p.angleMode(p.DEGREES)
-      p.rotate(camera_yawDeg);
+      //p.rotate(camera_yawDeg);
+      p.rotate(180);
       //p.translate(0, 0);
 
 
       //Guid Line
       for( let i=0; i<WORD_W; i++ ){
         let y = p.map( i ,  0 , +WORD_W , -container.clientWidth/2, container.clientWidth/2)
-
-        if( i == WORD_W/2 )p.stroke( p.color(255,0,0) )
-          else p.stroke( p.color(0,0,0) )
-        p.strokeWeight(1);
+        p.strokeWeight(0.1);
+        if( i == WORD_W/2 ){ 
+          p.stroke( p.color(255,0,0) )
+          p.strokeWeight(0.6);
+        }
+        else p.stroke( p.color(0,0,0) )
+        
         p.line(-container.clientWidth/2,y,container.clientWidth/2,y)
         p.line(y,-container.clientWidth/2,y,container.clientWidth/2)
       }
@@ -293,7 +405,27 @@ const sketch = (p) => {
 
         rect.draw(sections); 
       });
-      
+      /*
+      if( intersectionPoints.length > 3) {
+        let x1 = p.map( intersectionPoints[3].x , -WORD_W/2, +WORD_W/2, +container.clientWidth/2 , -container.clientWidth/2)
+        let y1 = p.map( intersectionPoints[3].z , -WORD_W/2, +WORD_W/2, +container.clientWidth/2 , -container.clientWidth/2)
+
+        console.log(x1+','+y1);
+        p.push();
+        p.rotate(180);
+        let cropped = p.get( x1, y1, container.clientWidth/2, container.clientWidth/2); // x, y, width, height
+        //p.scale(-1, -1);
+        p.image(cropped, 0, 0);
+        p.pop();
+      }*/
+
+        /*p.push();
+
+        let cropped = p.get( container.clientWidth/2 , 0, container.clientWidth/2, container.clientWidth/2); // x, y, width, height
+        p.scale(-1, -1);
+        p.image(cropped, -container.clientWidth/2 , -container.clientWidth/2  , container.clientWidth , container.clientWidth);
+        p.pop();*/
+
     };
 
     p.windowResized = () => {
@@ -346,4 +478,42 @@ function boxToRect2D( box, p ) {
   return rect2d;
 }
 
+
+export function mapRange(value, inMin, inMax, outMin, outMax) {
+  return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
+}
+
+
+const intersectionPoints = [];
+
+setInterval(() => {
+  const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0); // XY plane با Z=0
+
+  const ndcCorners = [
+    new THREE.Vector2(-1, 1),  // top-left
+    new THREE.Vector2(1, 1),   // top-right
+    new THREE.Vector2(-1, -1), // bottom-left
+    new THREE.Vector2(1, -1)   // bottom-right
+  ];
+
+  ndcCorners.forEach((ndc,index) => {
+    // تبدیل NDC به world
+    const vec = new THREE.Vector3(ndc.x, ndc.y, 0.5); // z=0.5 در NDC
+    vec.unproject(camera);
+
+    // بردار جهت
+    const dir = vec.clone().sub(camera.position).normalize();
+
+    // Ray از دوربین
+    const ray = new THREE.Ray(camera.position.clone(), dir);
+
+    // برخورد با Plane
+    const intersect = new THREE.Vector3();
+    ray.intersectPlane(plane, intersect);
+    //intersectionPoints.push(intersect);
+    intersectionPoints[index] =intersect; 
+  });
+
+  //console.log(intersectionPoints);
+}, 1000);
 

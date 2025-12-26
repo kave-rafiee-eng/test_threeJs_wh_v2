@@ -1,9 +1,12 @@
 import express from 'express';
+import cors from 'cors';
 import mysql from 'mysql2/promise';
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
+
+app.use(cors());  
 app.use(express.json());
 
 // =====================
@@ -13,7 +16,7 @@ const pool = mysql.createPool({
   host: 'localhost',
   user: 'root',
   password: '',        // XAMPP default
-  database: 'ips',
+  database: 'wh_sim',
   port: 3306,
   waitForConnections: true,
   connectionLimit: 10
@@ -64,31 +67,33 @@ function parseJsonColumns(records) {
 }
 
 //http://localhost:8080/user?limit=5&page=1
-app.get('/ips/operation/history', async (req, res) => {
+app.get('/wh_sim/inventory', async (req, res) => {
   try {
  
-    const page = parseInt(req.query.page) || 1;       
+    /*const page = parseInt(req.query.page) || 1;       
     const limit = parseInt(req.query.limit) || 100;  
     const offset = (page - 1) * limit;
 
-    const [users] = await pool.query(
+    const [slabes] = await pool.query(
       'SELECT * FROM operations LIMIT ? OFFSET ?',
       [limit, offset]
+    );*/
+
+    const [slabes] = await pool.query(
+      'SELECT * FROM `inventory` WHERE 1'
     );
 
-    const transformed = parseJsonColumns(users);
+    const transformed = parseJsonColumns(slabes);
 
-
-    transformed.forEach(element => {
+    /*transformed.forEach(element => {
       element.dimension = {};
-    });
+    });*/
 
     /*res.status(200).json({
       page,
       limit,
       data: transformed
     });*/
-
 
     res.status(200).json(
      transformed
@@ -102,56 +107,38 @@ app.get('/ips/operation/history', async (req, res) => {
 
 /*
 [
-  { "name": "Ali", "age": 30, "city": "Tehran", "preferences": { "theme": "dark", "notifications": true } }
-]
-
-{"W":10, "H":100, "D":50,
-"WT":20}
-{"BOX":"13k00112233"}
-
-{"BOX":"13k00112233","X":10,"Y":10,"S":2}
-  */
-
-//"order_num", "slab_id", "dimension", "pos_init", "pos_target", "status"
-/*
-[
-  { "order_num": 9, "slab_id": "sl123456", "status": 1, 
+  { "slab_id": "sl12" ,
     "dimension": {"W":10, "H":100, "D":50, "WT":20},
-    "pos_init": {"BOX":"13k00112233","X":10,"Y":10,"S":2},
-    "pos_target": {"BOX":"13k00112233","X":10,"Y":10,"S":2} 
+    "pos_init": {"BOX":"13k00112233","X":10,"Y":10,"S":2}
   },   
-  { "order_num": 10, "slab_id": "sl123456", "status": 1, 
+  { "slab_id":  "sl13" ,
     "dimension": {"W":10, "H":100, "D":50, "WT":20},
-    "pos_init": {"BOX":"13k00112233","X":10,"Y":10,"S":2},
-    "pos_target": {"BOX":"13k00112233","X":10,"Y":10,"S":2} 
-  }
+    "pos_init": {"BOX":"13k00112233","X":10,"Y":10,"S":2}
+  } 
 ]
 
 */
 
-app.post('/ips/order/new/', async (req, res) => {
+app.post('/wh_sim/inventory/insert/all', async (req, res) => {
 
   console.log("Post ")
-  const users = req.body;
-  const requiredKeys = ["order_num", "slab_id", "dimension", "pos_init", "pos_target", "status"];
+  const slabes = req.body;
+  const requiredKeys = ["slab_id", "pos_init", "dimension"];
 
-  if (!Array.isArray(users) || users.length === 0) {
-    return res.status(400).json({ message: 'Array of users required' });
+  if (!Array.isArray(slabes) || slabes.length === 0) {
+    return res.status(400).json({ message: 'Array of slabes required' });
   }
 
   // Validation
-  const invalid = users.find(u => requiredKeys.some(k => !(k in u)));
+  const invalid = slabes.find(u => requiredKeys.some(k => !(k in u)));
   if (invalid) {
-    return res.status(400).json({ message: 'All users must have name, age, city and preferences' });
+    return res.status(400).json({ message: 'All slabes must have requiredKeys :' , requiredKeys });
   }
 
-  const values = users.map(u => [
-    u.order_num,
+  const values = slabes.map(u => [
     u.slab_id,
-    JSON.stringify(u.dimension),
     JSON.stringify(u.pos_init),
-    JSON.stringify(u.pos_target),
-    u.status,
+    JSON.stringify(u.dimension),
   ]);
 
   console.log(values);
@@ -159,11 +146,23 @@ app.post('/ips/order/new/', async (req, res) => {
   try {
 
     await pool.query(
-      'INSERT INTO orders(order_num, slab_id, dimension, pos_init, pos_target , status) VALUES ?',
+      'DELETE FROM `inventory` WHERE 1',
+    );
+
+    console.log("Delect All Data")
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'DB error' });
+  }
+
+  try {
+
+    await pool.query(
+      'INSERT INTO inventory(slab_id, pos_init , dimension ) VALUES ?',
       [values]
     );
 
-    res.status(201).json({ message: 'Users inserted', count: users.length });
+    res.status(201).json({ message: 'slabes inserted', count: slabes.length });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'DB error' });

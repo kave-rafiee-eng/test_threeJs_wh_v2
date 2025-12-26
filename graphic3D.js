@@ -3,7 +3,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 
 import { BOX3D } from './box3d.js';
 
-const WORD_W = 50
+const WORD_W = 80
 //renderer
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 //scene
@@ -278,7 +278,7 @@ function set_word3D( scene ){
   scene.add(grid);
   
   //light
-  const light = new THREE.DirectionalLight(0xffffff, 1);
+  /*const light = new THREE.DirectionalLight(0xffffff, 1);
   light.position.set(0, 15, -15); 
   light.castShadow = true;       
   light.shadow.mapSize.width = 1024;
@@ -287,8 +287,36 @@ function set_word3D( scene ){
   light.shadow.camera.far = 50;
   scene.add(light);
   const lightHelper = new THREE.DirectionalLightHelper(light, 2, 0xffffff); 
+  scene.add(lightHelper);*/
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+  dirLight.position.set(100, 20, 100); 
+  dirLight.castShadow = true;
+
+  dirLight.shadow.mapSize.width = 4096;
+  dirLight.shadow.mapSize.height = 4096;
+
+  dirLight.shadow.camera.left = -150;
+  dirLight.shadow.camera.right = 150;
+  dirLight.shadow.camera.top = 100;
+  dirLight.shadow.camera.bottom = -100;
+  dirLight.shadow.camera.near = 1;
+  dirLight.shadow.camera.far = 500;
+
+  dirLight.shadow.radius = 4;
+
+  scene.add(dirLight);
+
+  const lightHelper = new THREE.DirectionalLightHelper(dirLight, 2, 0xffffff); 
   scene.add(lightHelper);
 
+  
+  const ambient = new THREE.AmbientLight(0xffffff, 1); 
+  scene.add(ambient);
+  
+  const pointLight = new THREE.PointLight(0xffffff, 0.5, 50); 
+  pointLight.position.set(0, 10, 0);
+  scene.add(pointLight);
 }
 
 
@@ -517,3 +545,64 @@ setInterval(() => {
   //console.log(intersectionPoints);
 }, 1000);
 
+//---------------------
+
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
+import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader.js';
+
+const mtlLoader = new MTLLoader();
+
+mtlLoader.setPath('/model/');
+mtlLoader.load('12281_Container_v2_L2.mtl', (materials) => {
+  materials.preload();
+
+  console.log(materials);
+
+  const objLoader = new OBJLoader();
+  objLoader.setMaterials(materials);
+  objLoader.setPath('/model/');
+
+  objLoader.load('12281_Container_v2_L2.obj', (object) => {
+    object.scale.set(0.01, 0.01, 0.01);
+    object.position.set(5, 0, 10);
+    //object.rotation.y = Math.PI/2;
+    object.rotation.z = Math.PI/2;
+    object.rotation.x = -Math.PI/2;
+    object.traverse(c => c.castShadow = true);
+
+    scene.add(object);
+
+  });
+});
+
+mtlLoader.load('semi.mtl', (materials) => {
+  materials.preload();
+
+  console.log(materials);
+
+  const objLoader = new OBJLoader();
+  objLoader.setMaterials(materials);
+  objLoader.setPath('/model/');
+
+  objLoader.load('semi.obj', (object) => {
+    object.scale.set(0.3, 0.3, 0.3);
+    object.position.set(10, 0, 10);
+    //object.rotation.y = Math.PI/2;
+    object.rotation.y = Math.PI;
+    //object.rotation.x = -Math.PI/2;
+    object.traverse(c => c.castShadow = true);
+
+    object.traverse(c => {
+      if (c.isMesh) {
+        c.material = new THREE.MeshStandardMaterial({
+          color: 0x999999,
+          metalness: 0.4,
+          roughness: 0.6
+        });
+      }
+    });
+
+    scene.add(object);
+
+  });
+});

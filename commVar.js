@@ -1,6 +1,6 @@
 
 export const GV = {
-  salbes: [],
+  slabes: [],
   stages: [],
   rollingTables:[],
   exitStages:[],

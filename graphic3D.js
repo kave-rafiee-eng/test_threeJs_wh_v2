@@ -41,7 +41,7 @@ scene.add(cube);*/
 
 let boxes_3D = [];
 
-function colorFromIndex(i) {
+export function colorFromIndex(i) {
   const hue = (i * 137.508) % 360;
   return new THREE.Color(`hsl(${hue}, 70%, 50%)`);
 }
@@ -521,7 +521,6 @@ export function mapRange(value, inMin, inMax, outMin, outMax) {
   return outMin + (outMax - outMin) * ((value - inMin) / (inMax - inMin));
 }
 
-
 const intersectionPoints = [];
 
 setInterval(() => {
@@ -535,24 +534,16 @@ setInterval(() => {
   ];
 
   ndcCorners.forEach((ndc,index) => {
-    // تبدیل NDC به world
     const vec = new THREE.Vector3(ndc.x, ndc.y, 0.5); // z=0.5 در NDC
     vec.unproject(camera);
-
-    // بردار جهت
     const dir = vec.clone().sub(camera.position).normalize();
 
-    // Ray از دوربین
     const ray = new THREE.Ray(camera.position.clone(), dir);
 
-    // برخورد با Plane
     const intersect = new THREE.Vector3();
     ray.intersectPlane(plane, intersect);
-    //intersectionPoints.push(intersect);
     intersectionPoints[index] =intersect; 
   });
-
-  //console.log(intersectionPoints);
 }, 1000);
 
 //---------------------

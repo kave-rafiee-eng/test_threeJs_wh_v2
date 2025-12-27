@@ -3,13 +3,104 @@ import { readDb_inventory , send_inventory , readDb_orders , db_newOrder} from '
 import{ GV }from './commVar.js'
 import { STAGE , SLAB , SLAB_TYPE , createSlab  } from './SLAB.js';
 
-import { update3D , set_sceneBoxes } from './graphic3D.js';
+import { update3D , set_sceneBoxes , colorFromIndex } from './graphic3D.js';
 
 
 
 let listOrders = [];
-
 const def_PAGE_IN_SIZE = 10;
+
+document.getElementById("btn-exit-slab").addEventListener('click',async()=>{
+  
+  let slab_id = document.querySelector('#select-exit-id').value;
+  let exitStage = document.querySelector('#select-exit-target').value;
+
+  if( slab_id == '' || exitStage == '' )return;
+
+  let Arrdata = [];
+
+  let biggestOrderNum = 0;
+  listOrders.forEach((order)=>{
+    if( order.order_num > biggestOrderNum )biggestOrderNum= order.order_num;
+  })
+
+  GV.slabes.forEach(slab => {
+    if( slab.id == slab_id ){
+
+      let order = {};
+
+      order.order_num = biggestOrderNum+1;
+      order.slab_id = slab.id;
+      order.status = 2;
+      order.dimension = {
+
+      };
+      order.pos_init = {
+        BOX:slab.box
+      };
+      order.pos_target = {
+        BOX:exitStage
+      }
+      Arrdata.push(order)
+    }
+  });
+
+  console.log( Arrdata );
+
+  console.log( "Sending exit Order" );
+  const res = await db_newOrder( Arrdata ) ;
+  console.log( res );
+  console.log( "readDb_orders_list" );
+  await readDb_orders_list();
+  console.log( "End btn-new-order" );
+
+});
+
+function select_exit() {
+
+  let select = document.querySelector('#select-exit-id');
+  let prevValue = select.value;
+
+  select.innerHTML = '';
+
+  GV.slabes.forEach(slab => {
+    const option = document.createElement('option');
+    option.value = slab.id;
+    option.textContent = slab.id;
+    select.appendChild(option);
+  });
+
+  let exists = GV.slabes.some(slab => slab.id == prevValue);
+
+  if (exists) {
+    select.value = prevValue;
+  } else if (select.options.length > 0) {
+    select.selectedIndex = 0;
+  }
+
+  //-------------------------------------
+
+  select = document.querySelector('#select-exit-target');
+  prevValue = select.value;
+
+  select.innerHTML = '';
+
+  GV.exitStages.forEach(stage => {
+    const option = document.createElement('option');
+    option.value = stage.id;
+    option.textContent = stage.id;
+    select.appendChild(option);
+  });
+
+  exists = GV.exitStages.some(stage => stage.id == prevValue);
+
+  if (exists) {
+    select.value = prevValue;
+  } else if (select.options.length > 0) {
+    select.selectedIndex = 0;
+  }
+}
+
 
 document.getElementById("btn-new-slab").addEventListener('click',async()=>{
   
@@ -262,7 +353,15 @@ function table_orders() {
       ];
 
       cells.forEach(value => {
+
         const td = document.createElement('td');
+        if (order.pos_init?.BOX?.includes('RT')) {
+          td.style.backgroundColor = '#0eeb3e';
+        }
+        else if (order.pos_target?.BOX?.includes('EX')) {
+          td.style.backgroundColor = '#eb0e0eff';
+        }
+        
         td.textContent = value;
         tr.appendChild(td);
       });
@@ -305,8 +404,14 @@ function table_inventory(offset) {
       GV.slabes[tableIndex].box
     ];
 
-    cells.forEach(cellData => {
+    cells.forEach( ( cellData , index) => {
       const td = document.createElement("td");
+
+      if( index == 1 ){
+        let color = colorFromIndex( parseInt( parseInt( cellData.replace(/\D/g, ''), 10) ) )
+        td.style.background = `#${color.getHexString()}`
+      }
+    
       td.textContent = cellData;
       tr.appendChild(td);
     });
@@ -315,17 +420,16 @@ function table_inventory(offset) {
   }
 }
 
-
-
 setInterval(() => {
-    table_orders();
+  table_orders();
 
-    select_move_id();
-    select_move_target();
-    
-    table_inventory(table_inventory_offset);
-    let labelElement = document.getElementById("lable-inventory-list");
-    labelElement.innerText = `${table_inventory_offset} / ${ Math.floor(GV.slabes.length/def_PAGE_IN_SIZE) }`;
+  select_move_id();
+  select_move_target();
+  
+  table_inventory(table_inventory_offset);
+  let labelElement = document.getElementById("lable-inventory-list");
+  labelElement.innerText = `${table_inventory_offset} / ${ Math.floor(GV.slabes.length/def_PAGE_IN_SIZE) }`;
 
-    select_new();
+  select_new();
+  select_exit();
 }, 500);

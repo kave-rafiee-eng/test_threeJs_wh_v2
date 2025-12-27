@@ -5,7 +5,7 @@ import { useWASD } from './key.js';
 import { STAGE , SLAB , SLAB_TYPE , createSlab  } from './SLAB.js';
 
 import { update3D , set_sceneBoxes, set_sceneStages, set_cranePos , camera ,
-  update_slabById
+  update_slabById , colorFromIndex
  } from './graphic3D.js';
 
 import * as THREE from 'three';
@@ -17,6 +17,7 @@ import { } from './rest_api_comm.js'
 
 import{ GV }from './commVar.js'
 
+import { publish } from './Mqtt.js'
 
 readDb_inventory().then( result =>{
   console.log( result );
@@ -27,7 +28,6 @@ readDb_inventory().then( result =>{
 ).catch(err => {
   console.error('DB Error:', err);
 })
-
 
 
 async function saveInventory() {
@@ -61,25 +61,6 @@ async function saveInventory() {
   }
 }
 
-setTimeout(() => {
-
-  const merged = [...GV.stages, ...GV.rollingTables, ...GV.exitStages];
-
-  set_sceneStages(merged );
-  update3D();
-}, 1000);
-
-
-/*
-for( let i=0; i<5; i++ ){
-  try {
-    createSlab( SLAB_TYPE.BIG , 0, i*300, 0 , slabes );
-  } catch (err) {
-    console.error(err.message);
-  }
-}
-
-set_sceneBoxes(slabes)*/
 
 //createSlab( SLAB_TYPE.BIG , 1000, 1000, 1 , slabes );
 //set_sceneBoxes(slabes)
@@ -94,7 +75,7 @@ setInterval(function () {
 
   //------------------
 
-  const speed = 3;
+  const speed = 6;
 
   const forward = new THREE.Vector3();
   camera.getWorldDirection(forward);
@@ -307,7 +288,7 @@ function calculate_pop( craneX , craneY , slabes ){
 
 function cal_slabBox(slabes ,stages ){
 
-    slabes.forEach(slab=>{
+  slabes.forEach(slab=>{
 
     let slab_rect2D = new RECT2D( slab.x , slab.y , 1 , 1 );
 
@@ -328,14 +309,63 @@ function cal_slabBox(slabes ,stages ){
   })
 
 }
+
+function cal_stageExit(){
+
+  let removeIndexes  = [];
+
+  GV.slabes.forEach((slab,index)=>{
+
+    if( slab.box.search('EX') != -1 && index_loaded != index ){
+      removeIndexes.push(index);
+      console.log("removed Index :"+index)
+    }
+
+  });
+
+  removeIndexes.forEach((index)=>{
+    GV.slabes.splice(index, 1);
+    set_sceneBoxes(GV.slabes);
+    update3D();
+    GV.F_saveInventory = true;
+  })
+
+}
+
+
 setInterval(() => {
 
   const merged = [...GV.stages, ...GV.rollingTables, ...GV.exitStages];
 
   cal_slabBox(GV.slabes ,merged );
+  cal_stageExit();
+
 }, 100);
 
 
+setInterval(async() => {
+
+  if( GV.F_saveInventory ){
+    console.log("saveInventory Start");
+    await saveInventory();
+    GV.F_saveInventory = false;
+    console.log("saveInventory End");
+  }
+
+  const ips = {
+    X: Math.floor(cranePos.x),
+    Y: Math.floor(cranePos.y),
+    W: index_loaded !== -1 ? 20 : 0
+  };
+
+  publish('IPS', JSON.stringify(ips))
+
+}, 500);
+
+const merged = [...GV.stages, ...GV.rollingTables, ...GV.exitStages];
+
+set_sceneStages(merged );
+update3D();
 
 
 //------------------------------------------
@@ -352,15 +382,5 @@ setInterval(() => {
   "pos_target":{"BOX":"13k00112233","X":10,"Y":10,"S":2},
 */
 //------------------------------------------
-
-setInterval(async() => {
-
-  if( GV.F_saveInventory ){
-    console.log("saveInventory Start");
-    await saveInventory();
-    GV.F_saveInventory = false;
-    console.log("saveInventory End");
-  }
-}, 500);
 
 

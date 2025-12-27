@@ -29,6 +29,9 @@
         <li class="nav-item" role="presentation">
           <button class="nav-link" id="new-tab" data-bs-toggle="tab" data-bs-target="#new" type="button" role="tab" aria-controls="new" aria-selected="false">new</button>
         </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="new-tab" data-bs-toggle="tab" data-bs-target="#exit" type="button" role="tab" aria-controls="exit" aria-selected="false">exit</button>
+        </li>
       </ul>
 
       <div class="tab-content" id="myTabContent">
@@ -138,6 +141,53 @@
           </table>
 
         </div>
+
+        <!---------->
+        <div class="tab-pane fade" id="exit" role="tabpanel" aria-labelledby="exit-tab">...
+
+          <table class="table" id="" >
+            <thead>
+              <tr>
+                <th scope="col">id</th>
+                <th scope="col">exit</th>
+                <th scope="col">creat</th>
+              </tr>
+            </thead>
+            <tbody  >
+              <td>
+                <select id="select-exit-id" class="form-select" aria-label="Default select example">
+                </select>
+              </td>
+
+              <td>
+                <select id="select-exit-target" class="form-select" aria-label="Default select example">
+                </select>
+              </td>
+
+              <td>
+                <button id="btn-exit-slab" type="button" class="btn btn-primary">creat</button>
+              </td>
+
+            </tbody>
+          </table>
+
+          <!-- Table orders-->
+          <table class="table table-orders" id="table-ordrs" >
+            <thead>
+              <tr>
+                <th scope="col">order_num</th>
+                <th scope="col">id</th>
+                <th scope="col">init</th>
+                <th scope="col">target</th>
+              </tr>
+            </thead>
+            <tbody  >
+            </tbody>
+          </table>
+
+        </div>
+
+
       </div>
     </div>
 

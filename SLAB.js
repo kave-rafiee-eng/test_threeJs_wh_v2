@@ -124,7 +124,7 @@ import{ GV }from './commVar.js'
 
   for( let i=0; i<2; i++ ){
 
-    let id = `EX-00-${i}}`;
+    let id = `EX-00-${i}`;
       GV.exitStages.push( new STAGE({ x:x , y:y , height:1500 , width:600  ,id:id
     }) )
     y+=1500;

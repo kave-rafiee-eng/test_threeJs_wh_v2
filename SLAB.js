@@ -75,4 +75,60 @@ export function createSlab(type, x, y, s, slabs) {
   );
 
   console.log("id:"+ slabs[slabs.length-1].id )
+
+  return slabs.length-1;
 }
+
+
+import{ GV }from './commVar.js'
+
+
+(()=>{
+
+  let startX = -2800;
+  let startY = -1000;
+
+  let w = 400;
+  let h = 1500;
+  
+  let y = h/2;
+
+  for( let i=0; i<2; i++ ){
+
+    for( let j=0; j<10; j++ ){
+
+      let x = w/2 + w*j;
+      let id = `ST-${i}-${j}`;
+      GV.stages.push( new STAGE({ x:startX+x , y:startY+y , height:h , width:w ,id:id
+      }) )
+      x+= w;    
+    }
+    y+= h;
+  }
+
+
+  let x = 1600;
+  y = -300;
+
+  for( let i=0; i<2; i++ ){
+
+    let id = `RT-00-${i}`;
+      GV.rollingTables.push( new STAGE({ x:x , y:y , height:1500 , width:600  ,id:id
+    }) )
+    y+=1500;
+  }
+
+
+  x = 2300;
+  y = -300;
+
+  for( let i=0; i<2; i++ ){
+
+    let id = `EX-00-${i}}`;
+      GV.exitStages.push( new STAGE({ x:x , y:y , height:1500 , width:600  ,id:id
+    }) )
+    y+=1500;
+  }
+
+  
+})();

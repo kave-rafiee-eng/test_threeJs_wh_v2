@@ -19,21 +19,141 @@
     </div>
 
     <div class="col-4">
+      <ul class="nav nav-tabs" id="myTab" role="tablist">
+        <li class="nav-item" role="presentation">
+          <button class="nav-link active" id="list-tab" data-bs-toggle="tab" data-bs-target="#list" type="button" role="tab" aria-controls="list" aria-selected="true">list</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="move-tab" data-bs-toggle="tab" data-bs-target="#move" type="button" role="tab" aria-controls="move" aria-selected="false">move</button>
+        </li>
+        <li class="nav-item" role="presentation">
+          <button class="nav-link" id="new-tab" data-bs-toggle="tab" data-bs-target="#new" type="button" role="tab" aria-controls="new" aria-selected="false">new</button>
+        </li>
+      </ul>
+
+      <div class="tab-content" id="myTabContent">
+        <div class="tab-pane fade show active" id="list" role="tabpanel" aria-labelledby="list-tab">
+
+          <label id="lable-inventory-list" for="exampleInputPassword1">offset</label>
+          <input type="number" class="form-control" id="offset-inventory-list" placeholder="1">
+
+          <table class="table" id="table-inventory" >
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">id</th>
+                <th scope="col">box</th>
+              </tr>
+            </thead>
+            <tbody  >
+            </tbody>
+          </table>
+
+        </div>
+
+        <div class="tab-pane fade" id="move" role="tabpanel" aria-labelledby="move-tab">
+          
+          <table class="table" id="" >
+            <thead>
+              <tr>
+                <th scope="col">id</th>
+                <th scope="col">target</th>
+                <th scope="col">send</th>
+              </tr>
+            </thead>
+            <tbody  >
+              <td>
+                <select id="select-move-id" class="form-select" aria-label="Default select example">
+                </select>
+              </td>
+
+              <td>
+                <select id="select-move-target" class="form-select" aria-label="Default select example">
+                </select>
+              </td>
+
+              <td>
+                <button id="btn-new-order" type="button" class="btn btn-primary">Primary</button>
+              </td>
+
+            </tbody>
+          </table>
+
+          <!-- Table orders-->
+          <table class="table table-orders" id="table-ordrs" >
+            <thead>
+              <tr>
+                <th scope="col">order_num</th>
+                <th scope="col">id</th>
+                <th scope="col">init</th>
+                <th scope="col">target</th>
+              </tr>
+            </thead>
+            <tbody  >
+            </tbody>
+          </table>
+
+        </div>
+
+        <div class="tab-pane fade" id="new" role="tabpanel" aria-labelledby="new-tab">...
+
+          <table class="table" id="" >
+            <thead>
+              <tr>
+                <th scope="col">rolling</th>
+                <th scope="col">target</th>
+                <th scope="col">creat</th>
+              </tr>
+            </thead>
+            <tbody  >
+              <td>
+                <select id="select-new-rolling" class="form-select" aria-label="Default select example">
+                </select>
+              </td>
+
+              <td>
+                <select id="select-new-target" class="form-select" aria-label="Default select example">
+                </select>
+              </td>
+
+              <td>
+                <button id="btn-new-slab" type="button" class="btn btn-primary">creat</button>
+              </td>
+
+            </tbody>
+          </table>
+
+          <!-- Table orders-->
+          <table class="table table-orders" id="table-ordrs" >
+            <thead>
+              <tr>
+                <th scope="col">order_num</th>
+                <th scope="col">id</th>
+                <th scope="col">init</th>
+                <th scope="col">target</th>
+              </tr>
+            </thead>
+            <tbody  >
+            </tbody>
+          </table>
+
+        </div>
+      </div>
+    </div>
+
+
+  </div>
+
+  <div class="row">
+    <div class="col-4">
       <h1>p5.js</h1>
       <div id="p5_div" style="height: 70vh;"></div>
     </div>   
-
   </div>
   
   
   <script src="bundle.js"></script>
 
-  <!--
-    <link rel="stylesheet" href="/../node_modules/bootstrap/dist/css/bootstrap.min.css">
-
-  <script src="./node_modules/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    
-  -->
 
 </body>
 </html>

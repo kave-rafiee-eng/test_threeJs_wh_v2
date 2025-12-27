@@ -2,7 +2,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 
 import { useWASD } from './key.js';
-import { SLAB , SLAB_TYPE , createSlab  } from './SLAB.js';
+import { STAGE , SLAB , SLAB_TYPE , createSlab  } from './SLAB.js';
 
 import { update3D , set_sceneBoxes, set_sceneStages, set_cranePos , camera ,
   update_slabById
@@ -11,19 +11,17 @@ import { update3D , set_sceneBoxes, set_sceneStages, set_cranePos , camera ,
 import * as THREE from 'three';
 
 import { RECT2D , isRectCollideCenter , getRectCollisionSections } from './rect2d.js'
+import { readDb_inventory , send_inventory , readDb_orders , db_newOrder} from './dataBase.js'
 
-import { readDb_inventory , send_inventory } from './dataBase.js'
-let timer=0;
-let slabes = [];
+import { } from './rest_api_comm.js'
+
+import{ GV }from './commVar.js'
 
 
 readDb_inventory().then( result =>{
   console.log( result );
-  //slabes = JSON.parse( JSON.stringify( result ) );
-  slabes = result;
-  createSlab( SLAB_TYPE.BIG , 1000, 1000, 1 , slabes );
-  set_sceneBoxes(slabes);
-
+  GV.slabes = result;
+  set_sceneBoxes(GV.slabes);
   update3D();
 }
 ).catch(err => {
@@ -31,17 +29,21 @@ readDb_inventory().then( result =>{
 })
 
 
+
 async function saveInventory() {
+
+  cal_slabBox(GV.slabes ,GV.stages );
+
   try {
 
-    let Arr = slabes.map( e =>{
+    let Arr = GV.slabes.map( e =>{
       return   {
         slab_id: e.id,
         pos_init: {
-          "BOX": "00",
-          "X": e.x,
-          "Y": e.y,
-          "S": e.s
+          "BOX": e.box,
+          "X": Math.floor( e.x),
+          "Y": Math.floor( e.y),
+          "S": Math.floor( e.s)
         },
         dimension: {
           "W": e.width,
@@ -60,7 +62,10 @@ async function saveInventory() {
 }
 
 setTimeout(() => {
-  set_sceneStages(stages);
+
+  const merged = [...GV.stages, ...GV.rollingTables, ...GV.exitStages];
+
+  set_sceneStages(merged );
   update3D();
 }, 1000);
 
@@ -122,55 +127,58 @@ setInterval(function () {
   if (edges.KeyB || edges.KeyM ) {
 
     if( edges.KeyB ){ 
-      createSlab( SLAB_TYPE.BIG , cranePos.x , cranePos.y , 11 , slabes );
-      let finalLayer =  calculate_push( cranePos.x , cranePos.y , slabes ,  slabes[ slabes.length-1 ] );
-      slabes[ slabes.length-1 ].s = finalLayer;
-      saveInventory();
+      createSlab( SLAB_TYPE.BIG , cranePos.x , cranePos.y , 11 , GV.slabes );
+      let finalLayer =  calculate_push( cranePos.x , cranePos.y , GV.slabes ,  GV.slabes[ GV.slabes.length-1 ] );
+      GV.slabes[ GV.slabes.length-1 ].s = finalLayer;
+      GV.F_saveInventory = true;
+
     }
     else if( edges.KeyM ){
-      createSlab( SLAB_TYPE.MED , cranePos.x , cranePos.y , 11 , slabes );
-      let finalLayer =  calculate_push( cranePos.x , cranePos.y , slabes ,  slabes[ slabes.length-1 ] );
-      slabes[ slabes.length-1 ].s = finalLayer;
-      saveInventory();
+      createSlab( SLAB_TYPE.MED , cranePos.x , cranePos.y , 11 , GV.slabes );
+      let finalLayer =  calculate_push( cranePos.x , cranePos.y , GV.slabes ,  GV.slabes[ GV.slabes.length-1 ] );
+      GV.slabes[ GV.slabes.length-1 ].s = finalLayer;
+      GV.F_saveInventory = true;
     }
       
-    set_sceneBoxes(slabes);
+    set_sceneBoxes(GV.slabes);
     update3D();
   }
 
   //pop
   if ( edges.KeyR ) {
-    let index = calculate_pop( cranePos.x , cranePos.y , slabes );
+    let index = calculate_pop( cranePos.x , cranePos.y , GV.slabes );
     if( index != -1 ){
-      slabes.splice(index, 1);
-      set_sceneBoxes(slabes);
+      GV.slabes.splice(index, 1);
+      set_sceneBoxes(GV.slabes);
       update3D();
-    } 
+      GV.F_saveInventory = true;
+    }
   }
 
 
   if ( edges.KeyE ) {
     if( index_loaded >= 0 ){
-      let finalLayer =  calculate_push( cranePos.x , cranePos.y , slabes ,  slabes[ index_loaded ] );
-      slabes[ index_loaded ].s = finalLayer; 
+      let finalLayer =  calculate_push( cranePos.x , cranePos.y , GV.slabes ,  GV.slabes[ index_loaded ] );
+      GV.slabes[ index_loaded ].s = finalLayer; 
       index_loaded = -1;
-      set_sceneBoxes(slabes);
+      set_sceneBoxes(GV.slabes);
       update3D();
+      GV.F_saveInventory = true;
     }
     else{
-      index_loaded = calculate_pop( cranePos.x , cranePos.y , slabes );
+      index_loaded = calculate_pop( cranePos.x , cranePos.y , GV.slabes );
     }
   }
 
   if( index_loaded >= 0 ){
 
-    slabes[index_loaded].x = cranePos.x;
-    slabes[index_loaded].y = cranePos.y;
-    slabes[index_loaded].s = 15;
+    GV.slabes[index_loaded].x = cranePos.x;
+    GV.slabes[index_loaded].y = cranePos.y;
+    GV.slabes[index_loaded].s = 15;
 
     //set_sceneBoxes(slabes);
     //update3D();
-    update_slabById( slabes[index_loaded] );
+    update_slabById( GV.slabes[index_loaded] );
   }
   
 }, 10);
@@ -296,9 +304,10 @@ function calculate_pop( craneX , craneY , slabes ){
 
 }
 
-setInterval(() => {
 
-  slabes.forEach(slab=>{
+function cal_slabBox(slabes ,stages ){
+
+    slabes.forEach(slab=>{
 
     let slab_rect2D = new RECT2D( slab.x , slab.y , 1 , 1 );
 
@@ -318,32 +327,40 @@ setInterval(() => {
     if( anyCol == false )slab.setBox("");
   })
 
+}
+setInterval(() => {
+
+  const merged = [...GV.stages, ...GV.rollingTables, ...GV.exitStages];
+
+  cal_slabBox(GV.slabes ,merged );
 }, 100);
 
-import { STAGE } from './SLAB.js'
-let stages = [];
 
-(()=>{
 
-  let startX = -2000;
-  let startY = -1000;
 
-  let w = 400;
-  let h = 1500;
-  
-  let y = h/2;
+//------------------------------------------
 
-  for( let i=0; i<2; i++ ){
 
-    for( let j=0; j<10; j++ ){
+//select-move-id
 
-      let x = w/2 + w*j;
-      let id = `13k-${i}-${j}`;
-      stages.push( new STAGE({ x:startX+x , y:startY+y , height:h , width:w ,id:id
-      }) )
-      x+= w;    
-    }
-    y+= h;
+/*
+  "order_num": 11, 
+  "slab_id": "sl123456", 
+  "status": 1, 
+  "dimension": {"W":10, "H":100, "L":50, "WT":20},
+  "pos_init": {"BOX":"13k00112233","X":10,"Y":10,"S":2},
+  "pos_target":{"BOX":"13k00112233","X":10,"Y":10,"S":2},
+*/
+//------------------------------------------
+
+setInterval(async() => {
+
+  if( GV.F_saveInventory ){
+    console.log("saveInventory Start");
+    await saveInventory();
+    GV.F_saveInventory = false;
+    console.log("saveInventory End");
   }
-  
-})();
+}, 500);
+
+

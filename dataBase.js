@@ -1,6 +1,32 @@
 import axios from 'axios';
 import { SLAB } from './SLAB.js';
 
+
+
+export function readDb_orders() {
+  return axios
+    .get('http://localhost:3001/ips/order/list')
+    .then(res => {
+      return res.data;
+    });
+}
+
+export function readDb_inventory() {
+  return axios
+    .get('http://localhost:3001/wh_sim/inventory')
+    .then(res => {
+      return res.data.map(e => new SLAB({
+        width: e.dimension.W,
+        height: e.dimension.H,
+        depth: e.dimension.D,
+        id: e.slab_id,
+        x: e.pos_init.X,
+        y: e.pos_init.Y,
+        s: e.pos_init.S
+      }));
+    });
+}
+
 /*
   {
     "slab_id": "sl14",
@@ -18,28 +44,44 @@ import { SLAB } from './SLAB.js';
     }
   },
 */
-export function readDb_inventory() {
-  return axios
-    .get('http://localhost:3001/wh_sim/inventory')
-    .then(res => {
-      return res.data.map(e => new SLAB({
-        width: e.dimension.W,
-        height: e.dimension.H,
-        depth: e.dimension.D,
-        id: e.slab_id,
-        x: e.pos_init.X,
-        y: e.pos_init.Y,
-        s: e.pos_init.S
-      }));
-    });
-}
-
-
 export async function send_inventory(data) {
   try {
 
     const res = await axios.post(
       'http://localhost:3001/wh_sim/inventory/insert/all',
+      data,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+
+    return res.data;
+
+  } catch (err) {
+    console.error('Error sending inventory:', err);
+
+    if (err.response) {
+      console.log('status:', err.response.status);
+      console.log('data:', err.response.data);
+    } else if (err.request) {
+      console.log('no response from server');
+    } else {
+      console.log('error:', err.message);
+    }
+
+    throw err; 
+  }
+}
+
+
+
+export async function db_newOrder(data) {
+  try {
+
+    const res = await axios.post(
+      'http://localhost:3001/ips/order/new/',
       data,
       {
         headers: {

@@ -52,6 +52,7 @@ export function set_cranePos( x , y ) {
 
 let Arr_stages = [];
 let Arr_slabes = [];
+let Arr_rollingTables = [];
 
 export function update_slabById( originSlab ){
 
@@ -67,14 +68,14 @@ export function update_slabById( originSlab ){
 export function update3D(){
   draw_sceneBoxes(Arr_slabes);
   set_Ground(scene);
-  draw_stages(Arr_stages);
+  draw_stages(Arr_stages,Arr_rollingTables);
 }
 
 export function set_sceneBoxes(slabes) {
   Arr_slabes = JSON.parse( JSON.stringify(slabes) );
 }
 
-export function set_sceneStages(stages) {
+export function set_sceneStages( stages  ) {
   Arr_stages = JSON.parse( JSON.stringify(stages) );
 }
 
@@ -193,7 +194,6 @@ set_Ground( scene );
 export function draw_stages( stages ){
 
   clearGround('#3e5127ff')
-
   stages.forEach( (stage)=>{
 
     let x = mapRange( stage.x , 0 , WORD_W*100 , 0 , -groundCanvas.width  )
@@ -204,9 +204,19 @@ export function draw_stages( stages ){
     let boreder = mapRange( 50 , 0 , WORD_W*100 , 0 , groundCanvas.width )
 
     groundCtx.fillStyle = '#ffffffff';
+
+
     canvas_fillRectCenter( groundCtx ,  x , y , w , h)
 
-    groundCtx.fillStyle = '#151111ff';
+    if( stage.id.search("ST") != -1 ){
+      groundCtx.fillStyle = '#151111ff';
+    }
+    else if( stage.id.search("RT") != -1 ){
+      groundCtx.fillStyle = '#f00b0bff';
+    }
+    else if( stage.id.search("EX") != -1 ){
+      groundCtx.fillStyle = '#0044ffff';
+    }  
     canvas_fillRectCenter( groundCtx ,  x , y , w-boreder , h-boreder)
 
     groundCtx.save();
@@ -364,7 +374,7 @@ function clearScene(scene) {
 
 import p5 from "p5";
 import { RECT2D , isRectCollideCenter , getRectCollisionSections } from './rect2d.js'
-import { range, rotate } from 'three/tsl';
+import { If, range, rotate } from 'three/tsl';
 
 let container = document.getElementById("p5_div");
 let p5Instance = null;
@@ -556,8 +566,6 @@ mtlLoader.setPath('/model/');
 mtlLoader.load('12281_Container_v2_L2.mtl', (materials) => {
   materials.preload();
 
-  console.log(materials);
-
   const objLoader = new OBJLoader();
   objLoader.setMaterials(materials);
   objLoader.setPath('/model/');
@@ -577,8 +585,6 @@ mtlLoader.load('12281_Container_v2_L2.mtl', (materials) => {
 
 mtlLoader.load('semi.mtl', (materials) => {
   materials.preload();
-
-  console.log(materials);
 
   const objLoader = new OBJLoader();
   objLoader.setMaterials(materials);

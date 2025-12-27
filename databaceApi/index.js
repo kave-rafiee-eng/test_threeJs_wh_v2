@@ -22,14 +22,27 @@ const pool = mysql.createPool({
   connectionLimit: 10
 });
 
+const pool_ips = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '',        // XAMPP default
+  database: 'ips',
+  port: 3306,
+  waitForConnections: true,
+  connectionLimit: 10
+});
+
 // =====================
 // Test DB connection
 // =====================
 async function startServer() {
   try {
     const [rows] = await pool.query('SELECT 1');
-    console.log('✅ MySQL Connected:', rows);
+    console.log('✅ MySQL pool Connected:', rows);
 
+    const [rows2] = await pool_ips.query('SELECT 1');
+    console.log('✅ MySQL pool_ips Connected:', rows2);
+    
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
@@ -65,6 +78,26 @@ function parseJsonColumns(records) {
     return newRecord;
   });
 }
+
+//http://localhost:3001/ips/order/list
+app.get('/ips/order/list', async (req, res) => {
+  try {
+ 
+    const [slabes] = await pool_ips.query(
+      'SELECT * FROM `orders` WHERE 1'
+    );
+
+    const transformed = parseJsonColumns(slabes);
+
+    res.status(200).json(
+     transformed
+    );
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'DB error' });
+  }
+});
 
 //http://localhost:8080/user?limit=5&page=1
 app.get('/wh_sim/inventory', async (req, res) => {
@@ -118,7 +151,6 @@ app.get('/wh_sim/inventory', async (req, res) => {
 ]
 
 */
-
 app.post('/wh_sim/inventory/insert/all', async (req, res) => {
 
   console.log("Post ")
@@ -163,6 +195,60 @@ app.post('/wh_sim/inventory/insert/all', async (req, res) => {
     );
 
     res.status(201).json({ message: 'slabes inserted', count: slabes.length });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'DB error' });
+  }
+});
+
+
+/*
+[
+  { 
+		"order_num": 11, 
+	 	"slab_id": "sl123456", 
+	 	"status": 1, 
+    "dimension": {"W":10, "H":100, "L":50, "WT":20},
+    "pos_init": {"BOX":"13k00112233","X":10,"Y":10,"S":2},
+    "pos_target":{"BOX":"13k00112233","X":10,"Y":10,"S":2},
+  }
+]
+*/
+app.post('/ips/order/new/', async (req, res) => {
+
+  console.log("Post")
+  const order = req.body;
+  const requiredKeys = ["order_num", "slab_id", "dimension", "pos_init", "pos_target", "status"];
+
+  if (!Array.isArray(order) || order.length === 0) {
+    return res.status(400).json({ message: 'Array of users required' });
+  }
+
+  // Validation
+  const invalid = order.find(u => requiredKeys.some(k => !(k in u)));
+  if (invalid) {
+    return res.status(400).json({ message: 'All order requiredKeys'+requiredKeys });
+  }
+
+  const values = order.map(u => [
+    u.order_num,
+    u.slab_id,
+    JSON.stringify(u.dimension),
+    JSON.stringify(u.pos_init),
+    JSON.stringify(u.pos_target),
+    u.status,
+  ]);
+
+  console.log(values);
+
+  try {
+
+    await pool_ips.query(
+      'INSERT INTO orders(order_num, slab_id, dimension, pos_init, pos_target , status) VALUES ?',
+      [values]
+    );
+
+    res.status(201).json({ message: 'order inserted', count: order.length });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'DB error' });

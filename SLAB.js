@@ -1,4 +1,3 @@
-import { zip } from "three/examples/jsm/libs/fflate.module.js";
 
 export class SLAB {
   constructor({
@@ -19,6 +18,33 @@ export class SLAB {
     this.x= x;
     this.y= y;
     this.s= s;
+
+    this.id = id;
+
+    this.box = "";
+
+  }
+
+  setBox( box ){
+    this.box = box;
+  }
+}
+
+export class STAGE {
+  constructor({
+    width = 100,
+    height = 100,
+    id = "",
+    x = 0,
+    y = 0,
+
+  } = {}) {
+
+    this.height= height;
+    this.width= width;
+
+    this.x= x;
+    this.y= y;
 
     this.id = id;
 
